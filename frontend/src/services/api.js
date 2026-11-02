@@ -2,7 +2,7 @@
  * API Service for Search Engine Backend
  */
 
-const BASE_URL = '/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export async function apiRequest(endpoint, options = {}) {
   const url = `${BASE_URL}${endpoint}`;
