@@ -1,0 +1,222 @@
+<!DOCTYPE lewis SYSTEM "lewis.dtd">
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5544" NEWID="1">
+<DATE>26-FEB-1987 15:01:01.79</DATE>
+<TOPICS><D>cocoa</D></TOPICS>
+<PLACES><D>el-salvador</D><D>usa</D><D>uruguay</D></PLACES>
+<TEXT>&#2;
+<TITLE>BAHIA COCOA REVIEW</TITLE>
+<DATELINE>    SALVADOR, Feb 26 - </DATELINE>
+<BODY>Showers continued throughout the week in the Bahia cocoa zone, alleviating the drought and improving prospects for the temporao crop. Farmers have harvested 185,000 bags of cocoa beans so far, while exporters reported steady sales to United States buyers. Prices remained firm at 1,250 dollars per tonne.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5545" NEWID="2">
+<DATE>26-FEB-1987 15:02:20.00</DATE>
+<TOPICS><D>grain</D><D>wheat</D><D>corn</D></TOPICS>
+<PLACES><D>usa</D></PLACES>
+<TEXT>&#2;
+<TITLE>US GRAIN SHIPMENTS INCREASE DRAMATICALLY</TITLE>
+<DATELINE>    CHICAGO, Feb 26 - </DATELINE>
+<BODY>Federal grain inspectors inspected 45.2 mln bushels of corn and wheat for export during the past week, up from 38.1 mln bushels in the previous reporting period. Shipments to Asian markets accounted for over forty percent of the total volume.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5546" NEWID="3">
+<DATE>26-FEB-1987 15:03:00.12</DATE>
+<TOPICS><D>crude</D><D>oil</D></TOPICS>
+<PLACES><D>kuwait</D><D>saudi-arabia</D></PLACES>
+<TEXT>&#2;
+<TITLE>OPEC OIL PRODUCTION REMAINS DISCIPLINED</TITLE>
+<DATELINE>    LONDON, Feb 26 - </DATELINE>
+<BODY>Kuwait and Saudi Arabia oil officials affirmed today that OPEC crude production is closely adhering to established quotas. Middle East petroleum exporters pledged stability in spot crude pricing and indicated crude oil inventories in consuming nations were decreasing.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5547" NEWID="4">
+<DATE>26-FEB-1987 15:04:15.50</DATE>
+<TOPICS><D>money-fx</D><D>interest</D></TOPICS>
+<PLACES><D>usa</D><D>uk</D><D>west-germany</D></PLACES>
+<TEXT>&#2;
+<TITLE>FEDERAL RESERVE CUTS DISCOUNT RATE</TITLE>
+<DATELINE>    NEW YORK, Feb 26 - </DATELINE>
+<BODY>The Federal Reserve lowered its benchmark discount rate by half a point to 5.5 percent, aiming to stimulate economic growth and ease foreign exchange pressures on the dollar. Commercial banks quickly followed by trimming their prime lending rates.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5548" NEWID="5">
+<DATE>26-FEB-1987 15:05:00.00</DATE>
+<TOPICS><D>acq</D></TOPICS>
+<PLACES><D>usa</D></PLACES>
+<TEXT>&#2;
+<TITLE>CHEVRON CORP TO SELL ASSETS IN TEXAS</TITLE>
+<DATELINE>    SAN FRANCISCO, Feb 26 - </DATELINE>
+<BODY>Chevron Corp said it reached an agreement to sell several chemical processing plants and oil refining properties in eastern Texas for approximately 250 mln dollars. Proceeds from the divestiture will be utilized to reduce corporate debt.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5549" NEWID="6">
+<DATE>26-FEB-1987 15:06:10.00</DATE>
+<TOPICS><D>earn</D></TOPICS>
+<PLACES><D>usa</D></PLACES>
+<TEXT>&#2;
+<TITLE>GENERAL ELECTRIC POSTS HIGHER FOURTH QUARTER PROFITS</TITLE>
+<DATELINE>    FAIRFIELD, Conn., Feb 26 - </DATELINE>
+<BODY>General Electric Company reported fourth quarter net earnings of 730 mln dollars or 1.60 dollars per share, compared with 645 mln dollars or 1.42 dollars a year earlier. Annual revenues rose seven percent led by strong aircraft engines and financial services performance.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5550" NEWID="7">
+<DATE>26-FEB-1987 15:07:30.00</DATE>
+<TOPICS><D>trade</D></TOPICS>
+<PLACES><D>japan</D><D>usa</D></PLACES>
+<TEXT>&#2;
+<TITLE>JAPAN TRADE SURPLUS NARROWS SLIGHTLY</TITLE>
+<DATELINE>    TOKYO, Feb 26 - </DATELINE>
+<BODY>Japan trade surplus shrank marginally in January due to surging imports of crude oil, foodstuffs, and manufactured components. The Ministry of Finance declared export growth to North American markets decelerated following currency appreciation.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5551" NEWID="8">
+<DATE>26-FEB-1987 15:08:45.00</DATE>
+<TOPICS><D>sugar</D></TOPICS>
+<PLACES><D>cuba</D><D>ussr</D></PLACES>
+<TEXT>&#2;
+<TITLE>CUBA COMPLETES SUGAR SHIPMENT TO SOVIET UNION</TITLE>
+<DATELINE>    HAVANA, Feb 26 - </DATELINE>
+<BODY>Cuban state trading enterprise Cubaazucar announced completion of raw sugar cargo deliveries totaling 850,000 metric tonnes to Soviet ports. Milling operations in central provinces continue ahead of historical schedules despite rainfall.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5552" NEWID="9">
+<DATE>26-FEB-1987 15:10:00.00</DATE>
+<TOPICS><D>copper</D><D>metals</D></TOPICS>
+<PLACES><D>chile</D><D>usa</D></PLACES>
+<TEXT>&#2;
+<TITLE>CHILE COPPER PRODUCTION SURPASSES TARGETS</TITLE>
+<DATELINE>    SANTIAGO, Feb 26 - </DATELINE>
+<BODY>State-owned copper company Codelco revealed refined copper output rose 4.5 pct last month. Strong global demand from telecommunication and electrical manufacturing firms sustained cathode prices at London Metal Exchange sessions.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5553" NEWID="10">
+<DATE>26-FEB-1987 15:11:15.00</DATE>
+<TOPICS><D>coffee</D></TOPICS>
+<PLACES><D>brazil</D><D>colombia</D></PLACES>
+<TEXT>&#2;
+<TITLE>BRAZIL AND COLOMBIA DISCUSS COFFEE EXPORT QUOTAS</TITLE>
+<DATELINE>    RIO DE JANEIRO, Feb 26 - </DATELINE>
+<BODY>Delegates from Brazil and Colombia initiated bilateral talks regarding the International Coffee Organization export quota system. Ministers emphasized stabilizing international green bean prices to protect agricultural labor and smallholder plantations.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5554" NEWID="11">
+<DATE>26-FEB-1987 15:12:00.00</DATE>
+<TOPICS><D>money-fx</D></TOPICS>
+<PLACES><D>uk</D></PLACES>
+<TEXT>&#2;
+<TITLE>STERLING STRENGTHENS AGAINST US DOLLAR</TITLE>
+<DATELINE>    LONDON, Feb 26 - </DATELINE>
+<BODY>The British pound climbed against the US dollar in European currency exchanges, buoyed by positive balance of payments statistics and resilient domestic manufacturing output. Dealers anticipated the Bank of England would hold base rates unchanged.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5555" NEWID="12">
+<DATE>26-FEB-1987 15:13:30.00</DATE>
+<TOPICS><D>crude</D><D>gas</D></TOPICS>
+<PLACES><D>norway</D><D>uk</D></PLACES>
+<TEXT>&#2;
+<TITLE>NORTH SEA NATURAL GAS DISCOVERY REPORTED</TITLE>
+<DATELINE>    OSLO, Feb 26 - </DATELINE>
+<BODY>Statoil announced discovery of commercial natural gas reserves in the offshore Troll field development sector. Initial test wells produced approximately two million cubic meters of gas daily alongside condensate hydrocarbons.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5556" NEWID="13">
+<DATE>26-FEB-1987 15:14:50.00</DATE>
+<TOPICS><D>grain</D><D>soybeans</D></TOPICS>
+<PLACES><D>argentina</D></PLACES>
+<TEXT>&#2;
+<TITLE>ARGENTINE SOYBEAN HARVEST DELAYED BY FLOODING</TITLE>
+<DATELINE>    BUENOS AIRES, Feb 26 - </DATELINE>
+<BODY>Severe rainfall throughout Santa Fe and Cordoba agricultural districts interrupted soybean harvesting activity. Grain elevators reported delays in transport infrastructure, triggering speculative buying in European feed meal contracts.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5557" NEWID="14">
+<DATE>26-FEB-1987 15:16:00.00</DATE>
+<TOPICS><D>acq</D><D>banking</D></TOPICS>
+<PLACES><D>usa</D></PLACES>
+<TEXT>&#2;
+<TITLE>SECURITY PACIFIC COMPLETES REGIONAL BANK MERGER</TITLE>
+<DATELINE>    LOS ANGELES, Feb 26 - </DATELINE>
+<BODY>Security Pacific Corporation finalized its acquisition of Rainier Bancorporation for 1.15 billion dollars in common stock. The combined entity creates the largest banking branch network spanning Pacific Northwest consumer and commercial lending markets.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5558" NEWID="15">
+<DATE>26-FEB-1987 15:17:10.00</DATE>
+<TOPICS><D>gold</D><D>metals</D></TOPICS>
+<PLACES><D>south-africa</D><D>switzerland</D></PLACES>
+<TEXT>&#2;
+<TITLE>GOLD PRICES STEADY IN ZURICH TRADING</TITLE>
+<DATELINE>    ZURICH, Feb 26 - </DATELINE>
+<BODY>Gold bullion prices traded in narrow bands closing at 402.50 dollars per ounce. Financial analysts cited bullion investment demand offset by high mine output from South African mining operations and central bank auction rumors.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5559" NEWID="16">
+<DATE>26-FEB-1987 15:18:25.00</DATE>
+<TOPICS><D>shipping</D><D>trade</D></TOPICS>
+<PLACES><D>singapore</D><D>malaysia</D></PLACES>
+<TEXT>&#2;
+<TITLE>SINGAPORE CONTAINER PORT EXPANDS CAPACITY</TITLE>
+<DATELINE>    SINGAPORE, Feb 26 - </DATELINE>
+<BODY>The Port of Singapore Authority inaugurated three automated container berths to handle growing maritime traffic between Southeast Asia and Western Europe. Cargo handling efficiency improved with round-the-clock computer tracking.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5560" NEWID="17">
+<DATE>26-FEB-1987 15:19:40.00</DATE>
+<TOPICS><D>cocoa</D><D>sugar</D></TOPICS>
+<PLACES><D>ghana</D><D>uk</D></PLACES>
+<TEXT>&#2;
+<TITLE>GHANA COCOA MARKETING BOARD REVISES PURCHASES</TITLE>
+<DATELINE>    ACCRA, Feb 26 - </DATELINE>
+<BODY>Cocobod said cocoa bean purchases for the 1986/87 main crop arrived at 215,000 tonnes, exceeding initial seasonal forecasts. Favorable weather and timely delivery of agricultural fertilizers boosted yields across inland harvesting farms.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5561" NEWID="18">
+<DATE>26-FEB-1987 15:20:50.00</DATE>
+<TOPICS><D>earn</D><D>telecom</D></TOPICS>
+<PLACES><D>usa</D></PLACES>
+<TEXT>&#2;
+<TITLE>BELLSOUTH NET REVENUES ADVANCE</TITLE>
+<DATELINE>    ATLANTA, Feb 26 - </DATELINE>
+<BODY>BellSouth Corp reported annual consolidated net income of 1.58 billion dollars on total revenues of 11.4 billion dollars. Mobile communications subscriptions and business digital network installations drove double-digit revenue expansion.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5562" NEWID="19">
+<DATE>26-FEB-1987 15:22:00.00</DATE>
+<TOPICS><D>interest</D><D>money-fx</D></TOPICS>
+<PLACES><D>france</D></PLACES>
+<TEXT>&#2;
+<TITLE>BANK OF FRANCE MAINTAINS INTERVENTION RATE</TITLE>
+<DATELINE>    PARIS, Feb 26 - </DATELINE>
+<BODY>The Bank of France maintained its money market intervention rate at 7.75 percent following calm conditions in the European Monetary System. Commercial short-term liquidity remained ample with interbank rates easing.
+</BODY>
+</TEXT>
+</REUTERS>
+<REUTERS TOPICS="YES" LEWISSPLIT="TRAIN" CGISPLIT="TRAINING-SET" OLDID="5563" NEWID="20">
+<DATE>26-FEB-1987 15:23:15.00</DATE>
+<TOPICS><D>cotton</D><D>textiles</D></TOPICS>
+<PLACES><D>egypt</D><D>usa</D></PLACES>
+<TEXT>&#2;
+<TITLE>EGYPT OPENS EXPORT QUOTAS FOR EXTRA LONG STAPLE COTTON</TITLE>
+<DATELINE>    ALEXANDRIA, Feb 26 - </DATELINE>
+<BODY>The Alexandria Cotton Exporters Association announced opening of sales quotas for Giza extra-long staple cotton varieties. International textile spinning mills in Italy, Japan, and the United States placed advance purchasing orders.
+</BODY>
+</TEXT>
+</REUTERS>
+
