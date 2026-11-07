@@ -288,6 +288,15 @@ export default function App() {
               stepOrder={stepOrder}
               activeCheckpointName={activeCheckpointName}
               onIndexLoaded={handleIndexLoadedFromDisk}
+              onCheckpointDeleted={(deletedName) => {
+                if (
+                  activeCheckpointName &&
+                  (activeCheckpointName === deletedName ||
+                    activeCheckpointName === `${deletedName}.json`)
+                ) {
+                  setActiveCheckpointName('');
+                }
+              }}
               onNotify={addToast}
             />
           </section>

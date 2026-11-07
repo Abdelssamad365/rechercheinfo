@@ -82,7 +82,7 @@ export const api = {
     return apiRequest(`/index/postings?${params.toString()}`);
   },
 
-  // Export / Persistence
+  // Export / Persistence Registry
   saveIndex: (name) =>
     apiRequest('/export/save', {
       method: 'POST',
@@ -95,6 +95,38 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filename })
-    })
+    }),
+  uploadIndexCheckpoint: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiRequest('/export/upload', {
+      method: 'POST',
+      body: formData
+    });
+  },
+  deleteSavedIndex: (filename) =>
+    apiRequest(`/export/saved/${encodeURIComponent(filename)}`, {
+      method: 'DELETE'
+    }),
+  downloadSavedIndex: async (filename, fmt = 'json') => {
+    const params = new URLSearchParams({ fmt });
+    const url = `${BASE_URL}/export/download/${encodeURIComponent(filename)}?${params.toString()}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(errData.detail || `Download failed (${res.status})`);
+    }
+    const blob = await res.blob();
+    const baseName = filename.replace(/\.(json|pkl)$/i, '');
+    const outName = `${baseName}.${fmt === 'pkl' ? 'pkl' : 'json'}`;
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = outName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(blobUrl);
+    return outName;
+  }
 };
-

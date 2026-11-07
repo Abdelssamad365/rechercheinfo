@@ -7,7 +7,11 @@ import {
   FileJson,
   Clock,
   Binary,
-  ShieldCheck
+  ShieldCheck,
+  Download,
+  Upload,
+  Trash2,
+  X
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -28,11 +32,19 @@ export default function ExportSection({
   stepOrder = [],
   activeCheckpointName = '',
   onIndexLoaded,
+  onCheckpointDeleted,
   onNotify
 }) {
   const [saveName, setSaveName] = useState('reuters_index');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDragOverRegistry, setIsDragOverRegistry] = useState(false);
+
   const [loadingFilename, setLoadingFilename] = useState('');
+  const [downloadingFilename, setDownloadingFilename] = useState('');
+  const [deletingFilename, setDeletingFilename] = useState('');
+  const [confirmDeleteFilename, setConfirmDeleteFilename] = useState('');
+
   const [savedCheckpoints, setSavedCheckpoints] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
 
@@ -62,6 +74,13 @@ export default function ExportSection({
       active = false;
     };
   }, []);
+
+  // Auto-reset inline delete confirmation after 4s of inactivity
+  useEffect(() => {
+    if (!confirmDeleteFilename) return;
+    const timer = setTimeout(() => setConfirmDeleteFilename(''), 4000);
+    return () => clearTimeout(timer);
+  }, [confirmDeleteFilename]);
 
   const handleSave = async () => {
     if (!saveName.trim()) return;
@@ -96,6 +115,78 @@ export default function ExportSection({
       setLoadingFilename('');
     }
   };
+
+  const handleDownload = async (filename) => {
+    setDownloadingFilename(filename);
+    try {
+      const outName = await api.downloadSavedIndex(filename, 'json');
+      if (onNotify) {
+        onNotify('info', 'Download Started', `Exported "${outName}" to your computer.`);
+      }
+    } catch (err) {
+      if (onNotify) {
+        onNotify('error', 'Download Failed', err.message || 'Could not download checkpoint.');
+      }
+    } finally {
+      setDownloadingFilename('');
+    }
+  };
+
+  const importCheckpointFile = async (file) => {
+    if (!file) return;
+    setIsUploading(true);
+    try {
+      const res = await api.uploadIndexCheckpoint(file);
+      if (onNotify) {
+        onNotify('success', 'Index Uploaded', res.message);
+      }
+      await fetchSavedList();
+    } catch (err) {
+      if (onNotify) {
+        onNotify('error', 'Upload Failed', err.message || 'Could not import index JSON file.');
+      }
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleUploadChange = (e) => {
+    const file = e.target.files?.[0];
+    importCheckpointFile(file);
+    e.target.value = '';
+  };
+
+  const handleRegistryDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOverRegistry(false);
+    if (isUploading) return;
+    const file = e.dataTransfer.files?.[0];
+    importCheckpointFile(file);
+  };
+
+  const handleDelete = async (cp) => {
+    setDeletingFilename(cp.filename);
+    try {
+      const res = await api.deleteSavedIndex(cp.filename);
+      setConfirmDeleteFilename('');
+      setSavedCheckpoints((prev) => prev.filter((item) => item.filename !== cp.filename));
+      if (onCheckpointDeleted) {
+        onCheckpointDeleted(res.deleted || cp.name);
+      }
+      if (onNotify) {
+        onNotify('info', 'Checkpoint Removed', res.message);
+      }
+    } catch (err) {
+      if (onNotify) {
+        onNotify('error', 'Delete Failed', err.message || 'Could not remove checkpoint.');
+      }
+    } finally {
+      setDeletingFilename('');
+    }
+  };
+
+  const isAnyRowBusy = Boolean(loadingFilename || downloadingFilename || deletingFilename);
 
   return (
     <div className="studio-card studio-card-hover p-6 sm:p-7">
@@ -211,22 +302,71 @@ export default function ExportSection({
           </div>
         </div>
 
-        {/* Right Column: Saved Checkpoints Registry */}
-        <div className="lg:col-span-7 studio-well p-5 flex flex-col">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="text-sm font-bold text-zinc-950">Local Disk Checkpoint Registry</h3>
-            <span className="text-[11px] font-mono text-zinc-500 tabular-nums">
-              {savedCheckpoints.length} {savedCheckpoints.length === 1 ? 'snapshot' : 'snapshots'}
-            </span>
+        {/* Right Column: Local Disk Checkpoint Registry (Upload, Download, Restore, Remove) */}
+        <div
+          onDragEnter={(e) => {
+            e.preventDefault();
+            if (!isUploading) setIsDragOverRegistry(true);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (!isUploading) setIsDragOverRegistry(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+              setIsDragOverRegistry(false);
+            }
+          }}
+          onDrop={handleRegistryDrop}
+          className={`lg:col-span-7 studio-well p-5 flex flex-col transition-all ${
+            isDragOverRegistry ? 'border-zinc-900 bg-zinc-100/80 ring-2 ring-zinc-900/10' : ''
+          }`}
+        >
+          {/* Registry Header + Upload Index Button */}
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-zinc-950">Local Disk Checkpoint Registry</h3>
+              <span className="text-[11px] font-mono text-zinc-500 bg-white border border-zinc-200 px-2 py-0.5 rounded tabular-nums">
+                {savedCheckpoints.length} {savedCheckpoints.length === 1 ? 'snapshot' : 'snapshots'}
+              </span>
+            </div>
+
+            <label
+              title="Import an exported .json index file into the local registry"
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-zinc-900 text-xs font-semibold text-zinc-800 hover:text-white border border-zinc-200 hover:border-zinc-900 shadow-2xs transition-all cursor-pointer ${
+                isUploading ? 'opacity-50 pointer-events-none' : ''
+              }`}
+            >
+              <input
+                type="file"
+                accept=".json,application/json"
+                onChange={handleUploadChange}
+                disabled={isUploading}
+                className="hidden"
+              />
+              {isUploading ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Upload className="w-3.5 h-3.5" />
+              )}
+              <span>{isUploading ? 'Importing...' : 'Upload Index'}</span>
+            </label>
           </div>
+
           <p className="text-xs text-zinc-500 mb-4">
-            Restore any serialized index directly into active RAM without re-running corpus preprocessing.
+            {isDragOverRegistry
+              ? 'Drop .json index file here to import into the registry...'
+              : 'Restore into active RAM, download portable .json snapshots, or upload & manage checkpoints.'}
           </p>
 
           {savedCheckpoints.length > 0 ? (
-            <div className="space-y-2.5 max-h-[270px] overflow-y-auto pr-1">
+            <div className="space-y-2.5 max-h-[285px] overflow-y-auto pr-1">
               {savedCheckpoints.map((cp) => {
                 const isRestoring = loadingFilename === cp.filename;
+                const isDownloading = downloadingFilename === cp.filename;
+                const isDeleting = deletingFilename === cp.filename;
+                const isConfirmingDelete = confirmDeleteFilename === cp.filename;
                 const isActive =
                   activeCheckpointName &&
                   (activeCheckpointName === cp.filename || activeCheckpointName === cp.name);
@@ -285,25 +425,86 @@ export default function ExportSection({
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => handleLoad(cp.filename)}
-                      disabled={Boolean(loadingFilename)}
-                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-900 text-xs font-semibold text-zinc-800 hover:text-white transition-all border border-zinc-200 hover:border-zinc-900 cursor-pointer disabled:opacity-50 shrink-0"
-                    >
-                      {isRestoring ? (
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    {/* Row Action Cluster: Restore + Download + Remove */}
+                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                      {isConfirmingDelete ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(cp)}
+                            disabled={isDeleting}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            {isDeleting ? (
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3.5 h-3.5" />
+                            )}
+                            <span>{isDeleting ? 'Removing...' : 'Confirm'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteFilename('')}
+                            disabled={isDeleting}
+                            title="Cancel removal"
+                            className="p-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-600 transition-colors cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </>
                       ) : (
-                        <FolderDown className="w-3.5 h-3.5" />
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleLoad(cp.filename)}
+                            disabled={isAnyRowBusy}
+                            title="Restore checkpoint into active memory"
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-900 text-xs font-semibold text-zinc-800 hover:text-white transition-all border border-zinc-200 hover:border-zinc-900 cursor-pointer disabled:opacity-50"
+                          >
+                            {isRestoring ? (
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <FolderDown className="w-3.5 h-3.5" />
+                            )}
+                            <span>{isRestoring ? 'Restoring...' : 'Restore'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDownload(cp.filename)}
+                            disabled={isAnyRowBusy}
+                            title={`Download ${cp.name}.json`}
+                            aria-label={`Download ${cp.name}`}
+                            className="p-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-950 border border-zinc-200 hover:border-zinc-300 transition-all cursor-pointer disabled:opacity-50"
+                          >
+                            {isDownloading ? (
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Download className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteFilename(cp.filename)}
+                            disabled={isAnyRowBusy}
+                            title={`Remove ${cp.name} from disk`}
+                            aria-label={`Remove ${cp.name}`}
+                            className="p-1.5 rounded-lg bg-white hover:bg-rose-50 text-zinc-400 hover:text-rose-600 border border-zinc-200 hover:border-rose-200 transition-all cursor-pointer disabled:opacity-50"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
                       )}
-                      {isRestoring ? 'Restoring...' : 'Restore'}
-                    </button>
+                    </div>
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center py-10 px-4 text-center rounded-xl border border-dashed border-zinc-300 bg-white/60 text-xs text-zinc-400 font-mono">
-              No saved checkpoints found in backend/data/saved_indexes/ yet.
+            <div className="flex-1 flex flex-col items-center justify-center gap-2 py-10 px-4 text-center rounded-xl border border-dashed border-zinc-300 bg-white/60 text-xs text-zinc-400">
+              <span className="font-mono">No saved checkpoints in backend/data/saved_indexes/</span>
+              <span>Save an active index on the left or upload a .json snapshot above.</span>
             </div>
           )}
         </div>

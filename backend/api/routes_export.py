@@ -1,15 +1,20 @@
 """Serialization and Export routes.
-Allows saving generated indexes to disk and inspecting saved checkpoints.
+Allows saving, listing, loading, downloading, uploading, and deleting index checkpoints.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional
 from state import state
 from core.storage import (
     save_index_to_disk,
     list_saved_indexes,
-    load_index_from_disk
+    load_index_from_disk,
+    import_index_from_json_bytes,
+    get_saved_index_file_path,
+    delete_saved_index,
+    sanitize_checkpoint_name
 )
 from core.memory_monitor import compute_index_metrics
 
@@ -73,3 +78,61 @@ def load_index(req: LoadIndexReq):
         "metrics": state.latest_metrics
     }
 
+
+@router.get("/download/{filename}")
+def download_index(
+    filename: str,
+    fmt: str = Query("json", description="Export format: json or pkl")
+):
+    """Downloads a saved index checkpoint file (.json or .pkl) from disk."""
+    resolved = get_saved_index_file_path(filename, fmt=fmt)
+    if not resolved:
+        raise HTTPException(status_code=404, detail=f"Checkpoint '{filename}' not found on disk.")
+
+    full_path, download_name = resolved
+    media_type = "application/octet-stream" if fmt.lower() == "pkl" else "application/json"
+    return FileResponse(
+        path=full_path,
+        media_type=media_type,
+        filename=download_name
+    )
+
+
+@router.post("/upload")
+async def upload_index_checkpoint(file: UploadFile = File(...)):
+    """Uploads an external .json index checkpoint into the local disk registry."""
+    fname = file.filename or "uploaded_index.json"
+    if not fname.lower().endswith(".json"):
+        raise HTTPException(
+            status_code=400,
+            detail="Only .json index checkpoint files are supported for upload."
+        )
+
+    try:
+        raw_bytes = await file.read()
+        saved = import_index_from_json_bytes(raw_bytes, fname)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to import index file: {exc}")
+
+    return {
+        "status": "success",
+        "message": f"Imported checkpoint '{saved['name']}' ({saved['vocabulary_size']} terms, {saved['num_documents']} docs).",
+        "data": saved
+    }
+
+
+@router.delete("/saved/{filename}")
+def remove_saved_index(filename: str):
+    """Removes a saved index checkpoint (.json and .pkl) from local disk."""
+    clean_name = sanitize_checkpoint_name(filename)
+    removed = delete_saved_index(filename)
+    if not removed:
+        raise HTTPException(status_code=404, detail=f"Checkpoint '{clean_name}' not found.")
+
+    return {
+        "status": "success",
+        "message": f"Removed checkpoint '{clean_name}' from disk.",
+        "deleted": clean_name
+    }
