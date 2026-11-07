@@ -204,8 +204,8 @@ export default function App() {
   const shouldRender = (stageId) => viewMode === 'scroll' || activeStage === stageId;
 
   return (
-    <div className="min-h-screen studio-canvas text-slate-900 flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
-      {/* Sticky Frosted Navigation & Workflow Rail */}
+    <div className="min-h-screen studio-canvas text-zinc-900 flex flex-col font-sans selection:bg-zinc-900 selection:text-white">
+      {/* Sticky Header & Workflow Rail */}
       <Navbar
         datasetName={datasetName}
         docCount={docCount}
@@ -220,7 +220,7 @@ export default function App() {
       />
 
       {/* Main Studio Workspace */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-7">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-14 space-y-6">
         {/* 1. Dataset Ingestion & Corpus Explorer */}
         {shouldRender('corpus') && (
           <section id="section-corpus" className="scroll-mt-32">
@@ -280,7 +280,7 @@ export default function App() {
           </section>
         )}
 
-        {/* 5. Disk Serialization & Phase 2 Persistence Bridge */}
+        {/* 5. Disk Serialization & Persistence */}
         {shouldRender('export') && (
           <section id="section-export" className="scroll-mt-32">
             <ExportSection
@@ -293,24 +293,6 @@ export default function App() {
           </section>
         )}
       </main>
-
-      {/* Architectural Light Footer */}
-      <footer className="border-t border-slate-200/90 bg-white/80 backdrop-blur-sm py-5 px-6 text-xs text-slate-500 mt-8">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-indigo-600" />
-            <strong className="text-slate-800 font-semibold">ReutersIR Studio</strong>
-            <span className="text-slate-300">&bull;</span>
-            <span>Phase 1 — Information Retrieval Admin &amp; Indexer</span>
-          </div>
-          <div className="flex items-center gap-3 text-slate-500 font-mono text-[11px]">
-            <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-200/80 text-slate-600">
-              From-Scratch Python IR Core
-            </span>
-            <span>FastAPI + React 19 + Tailwind v4</span>
-          </div>
-        </div>
-      </footer>
 
       {/* Viewport-Pinned Floating Toasts */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />

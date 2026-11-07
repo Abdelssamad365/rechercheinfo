@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Sliders,
   ArrowUp,
   ArrowDown,
   Play,
   RotateCcw,
-  Sparkles,
   Terminal,
   GripVertical,
   Plus,
   X,
   AlertTriangle,
   ChevronDown,
-  CheckCircle2
+  CheckCircle2,
+  RefreshCw
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -97,7 +96,6 @@ export default function PipelineSection({
   const [draggedIdx, setDraggedIdx] = useState(null);
   const [dragOverIdx, setDragOverIdx] = useState(null);
 
-  // Move step via Up/Down buttons
   const moveStep = (index, direction) => {
     const targetIndex = index + direction;
     if (targetIndex < 0 || targetIndex >= stepOrder.length) return;
@@ -107,7 +105,6 @@ export default function PipelineSection({
     setStepOrder(updated);
   };
 
-  // HTML5 Drag & Drop handlers
   const handleDragStart = (idx) => {
     setDraggedIdx(idx);
   };
@@ -157,7 +154,6 @@ export default function PipelineSection({
     }
   };
 
-  // Debounced auto-preview when stepOrder or testText changes
   useEffect(() => {
     if (!autoPreview || !testText?.trim()) return;
     const timer = setTimeout(() => {
@@ -166,7 +162,6 @@ export default function PipelineSection({
     return () => clearTimeout(timer);
   }, [testText, stepOrder, autoPreview]);
 
-  // Detect pedagogical pipeline sequence insights
   const getPipelineHint = () => {
     const normIdx = stepOrder.indexOf('normalisation');
     const tagIdx = stepOrder.indexOf('tag_cleaning');
@@ -177,7 +172,7 @@ export default function PipelineSection({
       return 'No NLP steps active — raw whitespace splitting will be used.';
     }
     if (tagIdx !== -1 && normIdx !== -1 && tagIdx > normIdx) {
-      return 'Order Insight: "Tag Cleaning" is placed after "Normalisation". Angle brackets (<, >) may be stripped as punctuation first, turning tag names like "reuters" or "body" into vocabulary tokens!';
+      return 'Order Insight: "Tag Cleaning" is placed after "Normalisation". Angle brackets (<, >) may be stripped as punctuation first, turning tag names like "reuters" or "body" into vocabulary tokens.';
     }
     if (stopIdx !== -1 && normIdx !== -1 && stopIdx < normIdx) {
       return 'Order Insight: "Stopwords Removal" runs before "Normalisation". Capitalized words like "The" or punctuated words may bypass lowercase stopword matching.';
@@ -193,29 +188,21 @@ export default function PipelineSection({
   const rawWordCount = (testText || '').trim().split(/\s+/).filter(Boolean).length;
 
   return (
-    <div className="studio-card studio-card-hover p-6 sm:p-7 relative overflow-hidden">
-      {/* Top Accent */}
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 opacity-85" />
-
+    <div className="studio-card studio-card-hover p-6 sm:p-7 overflow-hidden">
       {/* Header & Presets */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
-        <div className="flex items-start sm:items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200/80 flex items-center justify-center shrink-0 shadow-2xs">
-            <Sliders className="w-5 h-5" />
+        <div>
+          <div className="flex items-center gap-2.5">
+            <span className="font-mono text-[11px] font-bold text-zinc-700 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200">
+              02
+            </span>
+            <h2 className="text-base sm:text-lg font-bold text-zinc-950 tracking-tight">
+              Dynamic NLP Pipeline Studio
+            </h2>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200/60">
-                STAGE 02
-              </span>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                Dynamic NLP Pipeline Studio
-              </h2>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Drag or reorder preprocessing stages and inspect live token transformations before indexing
-            </p>
-          </div>
+          <p className="text-xs text-zinc-500 mt-1">
+            Drag or reorder preprocessing stages and inspect live token transformations before indexing
+          </p>
         </div>
 
         {/* Preset Pills & Reset */}
@@ -231,8 +218,8 @@ export default function PipelineSection({
                 onClick={() => setStepOrder(preset.steps)}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
                   isMatch
-                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    ? 'bg-zinc-900 border-zinc-900 text-white font-semibold'
+                    : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'
                 }`}
               >
                 {preset.label}
@@ -243,34 +230,32 @@ export default function PipelineSection({
           <button
             onClick={resetOrder}
             title="Reset to default IR textbook order"
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200/70 text-xs font-medium text-slate-700 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200/70 text-xs font-medium text-zinc-700 transition-colors cursor-pointer"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+            <RotateCcw className="w-3.5 h-3.5 text-zinc-500" />
             Reset
           </button>
         </div>
       </div>
 
-      {/* Main Split Studio: Left = Execution Flow, Right = Live Dry-Run Playground */}
+      {/* Main Split Studio */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column: Visual Connected Pipeline Queue (7 cols) */}
+        {/* Left Column: Reorderable Pipeline Queue */}
         <div className="lg:col-span-7 space-y-3">
-          <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-            <span className="font-semibold text-slate-700">
+          <div className="flex items-center justify-between text-xs text-zinc-500 px-1">
+            <span className="font-semibold text-zinc-800">
               Active Execution Sequence ({stepOrder.length} {stepOrder.length === 1 ? 'Step' : 'Steps'})
             </span>
-            <span className="text-[11px] text-slate-400">Drag handle or use arrows to reorder</span>
+            <span className="text-[11px] text-zinc-400">Drag handle or use arrows to reorder</span>
           </div>
 
-          {/* Pedagogical Sequence Hint Banner */}
           {orderHint && (
-            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/90 text-amber-800 text-xs flex items-start gap-2.5 leading-relaxed">
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/90 text-amber-900 text-xs flex items-start gap-2.5 leading-relaxed">
               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <span>{orderHint}</span>
             </div>
           )}
 
-          {/* Active Step Cards */}
           <div className="space-y-1.5">
             {stepOrder.map((stepId, idx) => {
               const stepInfo = ALL_STEPS.find((s) => s.id === stepId) || {
@@ -293,44 +278,43 @@ export default function PipelineSection({
                     onDrop={(e) => handleDrop(e, idx)}
                     className={`group bg-white border rounded-xl p-3.5 flex items-center justify-between gap-3 transition-all ${
                       isDropTarget
-                        ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50/30'
-                        : 'border-slate-200/95 hover:border-indigo-300 shadow-2xs'
+                        ? 'border-zinc-900 ring-2 ring-zinc-900/10 bg-zinc-50'
+                        : 'border-zinc-200 hover:border-zinc-300 shadow-2xs'
                     } ${draggedIdx === idx ? 'opacity-50' : ''}`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div
                         title="Drag to reorder"
-                        className="text-slate-300 group-hover:text-slate-500 cursor-grab active:cursor-grabbing shrink-0"
+                        className="text-zinc-300 group-hover:text-zinc-500 cursor-grab active:cursor-grabbing shrink-0"
                       >
                         <GripVertical className="w-4 h-4" />
                       </div>
 
-                      <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-mono font-bold text-xs shrink-0 shadow-2xs">
+                      <div className="w-6 h-6 rounded-md bg-zinc-900 text-white flex items-center justify-center font-mono font-bold text-xs shrink-0">
                         {idx + 1}
                       </div>
 
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs sm:text-sm font-bold text-slate-900">
+                          <span className="text-xs sm:text-sm font-bold text-zinc-950">
                             {stepInfo.name}
                           </span>
-                          <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/70 px-2 py-0.2 rounded-full font-mono">
+                          <span className="text-[10px] font-medium text-zinc-600 bg-zinc-100 border border-zinc-200 px-2 py-0.2 rounded font-mono">
                             {stepInfo.tagline}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">
+                        <p className="text-[11px] text-zinc-500 mt-0.5 line-clamp-1">
                           {stepInfo.desc}
                         </p>
                       </div>
                     </div>
 
-                    {/* Step Action Controls */}
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => moveStep(idx, -1)}
                         disabled={idx === 0}
                         title="Move up in pipeline"
-                        className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/80 disabled:opacity-30 text-slate-600 hover:text-slate-900 transition-all cursor-pointer"
+                        className="p-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 disabled:opacity-30 text-zinc-600 hover:text-zinc-950 transition-all cursor-pointer"
                       >
                         <ArrowUp className="w-3.5 h-3.5" />
                       </button>
@@ -338,24 +322,23 @@ export default function PipelineSection({
                         onClick={() => moveStep(idx, 1)}
                         disabled={idx === stepOrder.length - 1}
                         title="Move down in pipeline"
-                        className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/80 disabled:opacity-30 text-slate-600 hover:text-slate-900 transition-all cursor-pointer"
+                        className="p-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 disabled:opacity-30 text-zinc-600 hover:text-zinc-950 transition-all cursor-pointer"
                       >
                         <ArrowDown className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => toggleStep(stepId)}
                         title="Disable step"
-                        className="ml-1 p-1.5 rounded-lg bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200/80 hover:border-rose-200 transition-all cursor-pointer"
+                        className="ml-1 p-1.5 rounded-lg bg-white hover:bg-rose-50 text-zinc-400 hover:text-rose-600 border border-zinc-200 hover:border-rose-200 transition-all cursor-pointer"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Flow Connector Arrow */}
                   {idx < stepOrder.length - 1 && (
                     <div className="flex justify-center -my-0.5 pointer-events-none">
-                      <ChevronDown className="w-3.5 h-3.5 text-indigo-300" />
+                      <ChevronDown className="w-3.5 h-3.5 text-zinc-300" />
                     </div>
                   )}
                 </React.Fragment>
@@ -363,10 +346,9 @@ export default function PipelineSection({
             })}
           </div>
 
-          {/* Available / Inactive Steps Tray */}
           {inactiveSteps.length > 0 && (
-            <div className="pt-3 border-t border-slate-200/70">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-2 px-1">
+            <div className="pt-3 border-t border-zinc-200/70">
+              <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider block mb-2 px-1">
                 Available Modules (Click to Append):
               </span>
               <div className="flex flex-wrap gap-2">
@@ -374,9 +356,9 @@ export default function PipelineSection({
                   <button
                     key={s.id}
                     onClick={() => toggleStep(s.id)}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-indigo-50 border border-dashed border-slate-300 hover:border-indigo-400 text-slate-700 hover:text-indigo-700 transition-all cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 border border-dashed border-zinc-300 hover:border-zinc-500 text-zinc-700 hover:text-zinc-950 transition-all cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5 text-indigo-600" />
+                    <Plus className="w-3.5 h-3.5 text-zinc-600" />
                     <span>{s.name}</span>
                   </button>
                 ))}
@@ -385,34 +367,32 @@ export default function PipelineSection({
           )}
         </div>
 
-        {/* Right Column: Auto-Reactive Live Dry-Run Playground (5 cols) */}
+        {/* Right Column: Live Dry-Run Playground */}
         <div className="lg:col-span-5 studio-well p-4 sm:p-5 flex flex-col justify-between">
           <div>
-            {/* Playground Header */}
             <div className="flex items-center justify-between gap-2 mb-2.5">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                <Terminal className="w-4 h-4 text-indigo-600" />
+              <div className="flex items-center gap-2 text-xs font-bold text-zinc-900">
+                <Terminal className="w-4 h-4 text-zinc-600" />
                 <span>Live Dry-Run Playground</span>
               </div>
 
-              <label className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 cursor-pointer select-none">
+              <label className="inline-flex items-center gap-1.5 text-[11px] font-medium text-zinc-600 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={autoPreview}
                   onChange={(e) => setAutoPreview(e.target.checked)}
-                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  className="rounded border-zinc-300 accent-zinc-900"
                 />
                 <span>Auto-trace</span>
               </label>
             </div>
 
-            {/* Quick Sample Snippet Buttons */}
             <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
               {TEST_SNIPPETS.map((snip) => (
                 <button
                   key={snip.label}
                   onClick={() => setTestText(snip.text)}
-                  className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-white hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 transition-colors cursor-pointer"
+                  className="text-[10px] font-medium px-2 py-0.5 rounded bg-white hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900 border border-zinc-200 transition-colors cursor-pointer"
                 >
                   {snip.label}
                 </button>
@@ -424,31 +404,30 @@ export default function PipelineSection({
               onChange={(e) => setTestText(e.target.value)}
               rows={3}
               placeholder="Paste raw SGML or text to inspect step-by-step transformations..."
-              className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 font-mono resize-none leading-relaxed shadow-2xs"
+              className="w-full bg-white border border-zinc-200 rounded-xl p-3 text-xs text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-900 font-mono resize-none leading-relaxed shadow-2xs"
             />
 
             {!autoPreview && (
               <button
                 onClick={() => runPreview(testText, stepOrder)}
                 disabled={isPreviewing}
-                className="mt-2.5 inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-semibold border border-indigo-200 transition-all shadow-2xs cursor-pointer"
+                className="mt-2.5 inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-lg bg-white hover:bg-zinc-100 text-zinc-900 text-xs font-semibold border border-zinc-300 transition-all shadow-2xs cursor-pointer"
               >
-                <Play className="w-3.5 h-3.5 text-indigo-600 fill-indigo-600" />
+                <Play className="w-3.5 h-3.5 text-zinc-800 fill-zinc-800" />
                 {isPreviewing ? 'Tracing Pipeline...' : 'Run Pipeline Trace'}
               </button>
             )}
           </div>
 
-          {/* Step-by-Step Transformation Trace */}
           {traceResult && (
-            <div className="mt-4 pt-3.5 border-t border-slate-200/90 space-y-2.5">
+            <div className="mt-4 pt-3.5 border-t border-zinc-200 space-y-2.5">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="font-bold text-slate-500 uppercase tracking-wider">
+                <span className="font-bold text-zinc-500 uppercase tracking-wider">
                   Transformation Trace
                 </span>
-                <span className="font-mono text-slate-500 tabular-nums">
+                <span className="font-mono text-zinc-500 tabular-nums">
                   {rawWordCount} raw &rarr;{' '}
-                  <strong className="text-emerald-700">{traceResult.final_token_count} tokens</strong>
+                  <strong className="text-teal-700">{traceResult.final_token_count} tokens</strong>
                 </span>
               </div>
 
@@ -456,20 +435,19 @@ export default function PipelineSection({
                 {traceResult.trace.map((t, idx) => (
                   <div
                     key={idx}
-                    className="bg-white border border-slate-200/80 p-2 rounded-lg flex flex-col gap-0.5"
+                    className="bg-white border border-zinc-200 p-2 rounded-lg flex flex-col gap-0.5"
                   >
-                    <span className="text-[10px] font-bold text-indigo-600">
+                    <span className="text-[10px] font-bold text-zinc-800">
                       {idx + 1}. {t.step_name}
                     </span>
-                    <span className="text-slate-600 break-words leading-relaxed line-clamp-2">
+                    <span className="text-zinc-600 break-words leading-relaxed line-clamp-2">
                       {t.preview}
                     </span>
                   </div>
                 ))}
               </div>
 
-              {/* Final Indexed Token Chips */}
-              <div className="p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200/90">
+              <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200">
                 <div className="flex items-center justify-between text-[11px] font-semibold text-emerald-800 mb-1.5">
                   <span className="inline-flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -487,7 +465,7 @@ export default function PipelineSection({
                       </span>
                     ))
                   ) : (
-                    <span className="text-[11px] text-slate-400 italic">No tokens emitted</span>
+                    <span className="text-[11px] text-zinc-400 italic">No tokens emitted</span>
                   )}
                 </div>
               </div>
@@ -496,22 +474,26 @@ export default function PipelineSection({
         </div>
       </div>
 
-      {/* Primary Execution Bar */}
-      <div className="mt-6 pt-5 border-t border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gradient-to-r from-indigo-50/60 via-white to-violet-50/50 -mx-6 sm:-mx-7 -mb-6 sm:-mb-7 px-6 sm:px-7 py-4">
-        <div className="text-xs text-slate-600 leading-relaxed text-center sm:text-left">
-          Computes <strong className="text-slate-900 font-semibold">4 Weighting Models</strong>{' '}
-          <span className="font-mono text-[11px] text-slate-500">(BoW, F, TF, TF-IDF)</span> &times;{' '}
-          <strong className="text-slate-900 font-semibold">3 Structures</strong>{' '}
-          <span className="font-mono text-[11px] text-slate-500">(Doc-Term, Term-Doc, Postings)</span>{' '}
+      {/* Clean Carbon Primary Execution Bar — Zero Purple Gradient */}
+      <div className="mt-6 pt-5 border-t border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-zinc-50/80 -mx-6 sm:-mx-7 -mb-6 sm:-mb-7 px-6 sm:px-7 py-4">
+        <div className="text-xs text-zinc-600 leading-relaxed text-center sm:text-left">
+          Computes <strong className="text-zinc-950 font-semibold">4 Weighting Models</strong>{' '}
+          <span className="font-mono text-[11px] text-zinc-500">(BoW, F, TF, TF-IDF)</span> &times;{' '}
+          <strong className="text-zinc-950 font-semibold">3 Structures</strong>{' '}
+          <span className="font-mono text-[11px] text-zinc-500">(Doc-Term, Term-Doc, Postings)</span>{' '}
           with recursive RAM profiling.
         </div>
 
         <button
           onClick={onGenerateIndexes}
           disabled={isGenerating || docCount === 0}
-          className="inline-flex items-center justify-center gap-2.5 py-3 px-7 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 active:scale-[0.99] text-white text-sm font-bold shadow-md shadow-indigo-600/25 ring-1 ring-indigo-700/20 transition-all cursor-pointer disabled:opacity-50 disabled:pointer-events-none shrink-0"
+          className="inline-flex items-center justify-center gap-2 py-2.5 px-6 rounded-lg bg-zinc-900 hover:bg-zinc-800 active:scale-[0.99] text-white text-sm font-semibold shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:pointer-events-none shrink-0"
         >
-          <Sparkles className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+          {isGenerating ? (
+            <RefreshCw className="w-4 h-4 animate-spin" />
+          ) : (
+            <Play className="w-3.5 h-3.5 fill-white" />
+          )}
           {isGenerating ? 'Building 12 Structures & Profiling RAM...' : 'Generate All Indexes'}
         </button>
       </div>
