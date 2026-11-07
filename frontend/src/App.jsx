@@ -88,6 +88,7 @@ export default function App() {
             setMetricsData(existing.metrics);
             setVocabSize(existing.vocabulary_size || existing.metrics?.vocabulary_size || 0);
             setExecutionTime(existing.execution_time_ms || 0);
+            setTotalTokens(existing.total_tokens_processed || 0);
             if (existing.pipeline_steps?.length) {
               setStepOrder(existing.pipeline_steps);
             }

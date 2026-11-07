@@ -1,88 +1,75 @@
-"""NLP Operations implemented 100% from scratch.
-No external NLP libraries (no NLTK, no spaCy, no regex re module for complex patterns).
-All functions are transparent, easily explained, and ready for face-to-face defense.
+"""From-scratch NLP preprocessing steps for Information Retrieval.
+
+Implemented without external NLP packages (no NLTK, spaCy, or regex `re`).
+Each stage is written as a small, self-contained function for clear explanation:
+  1. Tag Cleaning       — character state-machine + SGML entity decoding
+  2. Normalisation      — lowercasing, punctuation removal, tokenization
+  3. Stopwords Removal  — O(1) hash-set filtering
+  4. Stemming           — rule-based Porter suffix stripping
+  5. Lemmatization      — irregular dictionary + morphological inflection rules
 """
 
-from typing import Dict, List, Set, Union
+from typing import Dict, List, Set, Tuple
+from .parser import decode_sgml_entities
 
 
-# =====================================================================
+# ============================================================================
 # 1. TAG CLEANING (Nettoyage des balises SGML / XML)
-# =====================================================================
+# ============================================================================
 
 def clean_tags(text: str) -> str:
-    """
-    Strips all XML/SGML/HTML tags from the text using a character-by-character
-    state-machine parser. Avoids regular expressions or HTML libraries.
-    """
-    result = []
-    in_tag = False
+    """Strips `<...>` markup via a character state machine and decodes SGML entities."""
+    characters: List[str] = []
+    inside_tag = False
 
-    for char in text:
-        if char == '<':
-            in_tag = True
-            result.append(' ')  # Replace opening tag with space to prevent word joining
-        elif char == '>':
-            in_tag = False
-        elif not in_tag:
-            result.append(char)
+    for ch in text:
+        if ch == "<":
+            inside_tag = True
+            characters.append(" ")  # Prevent words on either side of a tag from merging
+        elif ch == ">":
+            inside_tag = False
+        elif not inside_tag:
+            characters.append(ch)
 
-    # Join and clean redundant spaces
-    cleaned = "".join(result)
-    return cleaned
+    without_tags = "".join(characters)
+    decoded = decode_sgml_entities(without_tags)
+    return " ".join(decoded.split())
 
 
-# =====================================================================
-# 2. NORMALISATION (Minuscules, ponctuation, espaces)
-# =====================================================================
+# ============================================================================
+# 2. NORMALISATION & TOKENIZATION (Minuscules, ponctuation, découpage)
+# ============================================================================
 
-# Standard punctuation characters to remove
 PUNCTUATION_CHARS: Set[str] = set(
     """!"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~§°«»“”‘’•—–…"""
 )
 
 
 def normalize_text(text: str) -> str:
-    """
-    Normalizes a raw text string:
-    - Lowercases all characters
-    - Replaces punctuation and special characters with spaces
-    - Replaces newlines/tabs with spaces
-    - Collapses multiple whitespace into a single space
-    """
-    chars = []
+    """Lowercases text, replaces punctuation with spaces, and collapses whitespace."""
+    cleaned: List[str] = []
     for ch in text.lower():
-        if ch in PUNCTUATION_CHARS:
-            chars.append(' ')
-        elif ch in ('\n', '\r', '\t'):
-            chars.append(' ')
+        if ch in PUNCTUATION_CHARS or ch.isspace():
+            cleaned.append(" ")
         else:
-            chars.append(ch)
+            cleaned.append(ch)
 
-    normalized_str = "".join(chars)
-    return " ".join(normalized_str.split())
+    return " ".join("".join(cleaned).split())
 
 
 def tokenize(text: str) -> List[str]:
-    """
-    Splits normalized string into individual word tokens.
-    Filters out empty tokens and non-alphabetic/numeric fragments.
-    """
-    raw_tokens = text.split()
-    clean_tokens = []
-    for token in raw_tokens:
-        token = token.strip()
-        # Keep tokens with at least one alphanumeric character
-        if any(c.isalnum() for c in token):
-            clean_tokens.append(token)
-    return clean_tokens
+    """Splits text on whitespace and keeps tokens containing alphanumeric characters."""
+    tokens: List[str] = []
+    for raw_token in text.split():
+        if any(ch.isalnum() for ch in raw_token):
+            tokens.append(raw_token)
+    return tokens
 
 
-# =====================================================================
+# ============================================================================
 # 3. STOPWORDS REMOVAL (Suppression des mots-vides)
-# =====================================================================
+# ============================================================================
 
-# Curated English stopword list (~160 words) standard in Information Retrieval
 DEFAULT_STOPWORDS: Set[str] = {
     "a", "about", "above", "after", "again", "against", "all", "am", "an", "and",
     "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being",
@@ -103,57 +90,77 @@ DEFAULT_STOPWORDS: Set[str] = {
     "weren't", "what", "what's", "when", "when's", "where", "where's", "which",
     "while", "who", "who's", "whom", "why", "why's", "with", "won't", "would",
     "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours",
-    "yourself", "yourselves"
+    "yourself", "yourselves",
 }
 
 
-def remove_stopwords(tokens: List[str], stopwords_set: Set[str] = DEFAULT_STOPWORDS) -> List[str]:
-    """Filters out stopwords from a list of word tokens."""
-    return [t for t in tokens if t.lower() not in stopwords_set]
+def remove_stopwords(
+    tokens: List[str],
+    stopwords_set: Set[str] = DEFAULT_STOPWORDS,
+) -> List[str]:
+    """Removes functional English stopwords in O(1) lookup time per token."""
+    return [token for token in tokens if token not in stopwords_set]
 
 
-# =====================================================================
-# 4. STEMMING (Racinisation - Porter-style Rule-Based Engine from scratch)
-# =====================================================================
+# ============================================================================
+# 4. STEMMING (Racinisation — Porter-style Suffix Stripping)
+# ============================================================================
 
-VOWELS: Set[str] = {'a', 'e', 'i', 'o', 'u'}
+VOWELS: Set[str] = {"a", "e", "i", "o", "u"}
+
+STEP2_SUFFIXES: List[Tuple[str, str]] = [
+    ("ational", "ate"),
+    ("tional", "tion"),
+    ("ization", "ize"),
+    ("ation", "ate"),
+    ("ator", "ate"),
+    ("alism", "al"),
+    ("fulness", "ful"),
+    ("ousness", "ous"),
+    ("iveness", "ive"),
+    ("biliti", "ble"),
+    ("izer", "ize"),
+    ("alli", "al"),
+    ("entli", "ent"),
+    ("eli", "e"),
+    ("ousli", "ous"),
+]
+
+STEP3_SUFFIXES: List[Tuple[str, str]] = [
+    ("icate", "ic"),
+    ("ative", ""),
+    ("alize", "al"),
+    ("iciti", "ic"),
+    ("ical", "ic"),
+    ("ful", ""),
+    ("ness", ""),
+]
 
 
-def _is_consonant(word: str, i: int) -> bool:
-    """Checks whether the character at index i is a consonant."""
-    ch = word[i]
+def _is_consonant(word: str, index: int) -> bool:
+    """Returns True if `word[index]` is a consonant (treating 'y' contextually)."""
+    ch = word[index]
     if ch in VOWELS:
         return False
-    if ch == 'y':
-        if i == 0:
-            return True
-        return not _is_consonant(word, i - 1)
+    if ch == "y":
+        return True if index == 0 else not _is_consonant(word, index - 1)
     return True
 
 
 def _measure(word: str) -> int:
-    """
-    Computes the Porter measure m for a word.
-    A word is represented as [C](VC)^m[V]. Returns m.
-    """
-    if not word:
-        return 0
-    
+    """Computes Porter syllable measure `m` for `[C](VC)^m[V]`."""
     n = len(word)
     i = 0
     m = 0
 
-    # Skip initial consonants [C]
     while i < n and _is_consonant(word, i):
         i += 1
 
     while i < n:
-        # Scan V+
         while i < n and not _is_consonant(word, i):
             i += 1
         if i >= n:
             break
-        # Scan C+
         while i < n and _is_consonant(word, i):
             i += 1
         m += 1
@@ -162,139 +169,92 @@ def _measure(word: str) -> int:
 
 
 def _has_vowel(stem: str) -> bool:
-    """Checks whether a stem contains at least one vowel."""
-    for i in range(len(stem)):
-        if not _is_consonant(stem, i):
-            return True
-    return False
+    """Returns True if `stem` contains at least one vowel."""
+    return any(not _is_consonant(stem, i) for i in range(len(stem)))
 
 
 def _ends_double_consonant(word: str) -> bool:
-    """Checks if the word ends with two identical consonants (e.g. -tt, -ss)."""
-    if len(word) < 2:
-        return False
-    return word[-1] == word[-2] and _is_consonant(word, len(word) - 1)
+    """Returns True if `word` ends with two identical consonants (e.g. 'tt', 'pp')."""
+    return len(word) >= 2 and word[-1] == word[-2] and _is_consonant(word, len(word) - 1)
 
 
 def _ends_cvc(word: str) -> bool:
-    """Checks if the word ends in Consonant-Vowel-Consonant where last is not w, x, y."""
+    """Returns True if `word` ends with Consonant-Vowel-Consonant (excluding w, x, y)."""
     if len(word) < 3:
         return False
-    c1 = _is_consonant(word, len(word) - 3)
-    v = not _is_consonant(word, len(word) - 2)
-    c2 = _is_consonant(word, len(word) - 1)
-    if c1 and v and c2:
-        return word[-1] not in ('w', 'x', 'y')
-    return False
+    is_cvc = (
+        _is_consonant(word, len(word) - 3)
+        and not _is_consonant(word, len(word) - 2)
+        and _is_consonant(word, len(word) - 1)
+    )
+    return is_cvc and word[-1] not in ("w", "x", "y")
+
+
+def _cleanup_ed_ing_stem(stem: str) -> str:
+    """Restores silent 'e' or trims double consonants after stripping '-ed' or '-ing'."""
+    if stem.endswith(("at", "bl", "iz")):
+        return stem + "e"
+    if _ends_double_consonant(stem) and not stem.endswith(("l", "s", "z")):
+        return stem[:-1]
+    if _measure(stem) == 1 and _ends_cvc(stem):
+        return stem + "e"
+    return stem
+
+
+def _apply_suffix_rules(word: str, rules: List[Tuple[str, str]]) -> str:
+    """Applies the first matching `(suffix, replacement)` rule when `measure(stem) > 0`."""
+    for suffix, replacement in rules:
+        if word.endswith(suffix):
+            stem = word[: -len(suffix)]
+            if _measure(stem) > 0:
+                return stem + replacement
+            break
+    return word
 
 
 def stem_word(word: str) -> str:
-    """
-    Stems a single English word using a simplified, transparent Porter rule engine.
-    Completely handcrafted with string slices.
-    """
+    """Reduces an English word to its root stem using Porter suffix-stripping rules."""
     if len(word) <= 2:
         return word
 
     w = word.lower()
 
-    # Step 1a: Plurals and basic suffixes
-    if w.endswith("sses"):
-        w = w[:-2]  # caresses -> caress
-    elif w.endswith("ies"):
-        w = w[:-2]  # ponies -> poni
-    elif w.endswith("ss"):
-        pass        # caress -> caress
-    elif w.endswith("s"):
-        w = w[:-1]  # cats -> cat
+    # Step 1a: Plurals (-sses, -ies, -s)
+    if w.endswith("sses") or w.endswith("ies"):
+        w = w[:-2]
+    elif w.endswith("s") and not w.endswith("ss"):
+        w = w[:-1]
 
-    # Step 1b: -eed, -ed, -ing
+    # Step 1b: Past & progressive suffixes (-eed, -ed, -ing)
     if w.endswith("eed"):
         stem = w[:-3]
         if _measure(stem) > 0:
             w = stem + "ee"
-    elif w.endswith("ed"):
-        stem = w[:-2]
-        if _has_vowel(stem):
-            w = stem
-            if w.endswith("at") or w.endswith("bl") or w.endswith("iz"):
-                w += "e"
-            elif _ends_double_consonant(w) and not (w.endswith("l") or w.endswith("s") or w.endswith("z")):
-                w = w[:-1]
-            elif _measure(w) == 1 and _ends_cvc(w):
-                w += "e"
-    elif w.endswith("ing"):
-        stem = w[:-3]
-        if _has_vowel(stem):
-            w = stem
-            if w.endswith("at") or w.endswith("bl") or w.endswith("iz"):
-                w += "e"
-            elif _ends_double_consonant(w) and not (w.endswith("l") or w.endswith("s") or w.endswith("z")):
-                w = w[:-1]
-            elif _measure(w) == 1 and _ends_cvc(w):
-                w += "e"
+    elif w.endswith("ed") and _has_vowel(w[:-2]):
+        w = _cleanup_ed_ing_stem(w[:-2])
+    elif w.endswith("ing") and _has_vowel(w[:-3]):
+        w = _cleanup_ed_ing_stem(w[:-3])
 
-    # Step 1c: Y to I
-    if w.endswith("y"):
-        stem = w[:-1]
-        if _has_vowel(stem):
-            w = stem + "i"
+    # Step 1c: Terminal 'y' -> 'i' when stem has a vowel
+    if w.endswith("y") and _has_vowel(w[:-1]):
+        w = w[:-1] + "i"
 
-    # Step 2: Suffix replacements
-    step2_rules = [
-        ("ational", "ate"),
-        ("tional", "tion"),
-        ("ization", "ize"),
-        ("ation", "ate"),
-        ("ator", "ate"),
-        ("alism", "al"),
-        ("fulness", "ful"),
-        ("ousness", "ous"),
-        ("iveness", "ive"),
-        ("biliti", "ble"),
-        ("izer", "ize"),
-        ("alli", "al"),
-        ("entli", "ent"),
-        ("eli", "e"),
-        ("ousli", "ous"),
-    ]
-    for suffix, replacement in step2_rules:
-        if w.endswith(suffix):
-            stem = w[:-len(suffix)]
-            if _measure(stem) > 0:
-                w = stem + replacement
-            break
-
-    # Step 3: Derivational suffixes
-    step3_rules = [
-        ("icate", "ic"),
-        ("ative", ""),
-        ("alize", "al"),
-        ("iciti", "ic"),
-        ("ical", "ic"),
-        ("ful", ""),
-        ("ness", ""),
-    ]
-    for suffix, replacement in step3_rules:
-        if w.endswith(suffix):
-            stem = w[:-len(suffix)]
-            if _measure(stem) > 0:
-                w = stem + replacement
-            break
+    # Steps 2 & 3: Derivational suffixes
+    w = _apply_suffix_rules(w, STEP2_SUFFIXES)
+    w = _apply_suffix_rules(w, STEP3_SUFFIXES)
 
     return w
 
 
 def stem_tokens(tokens: List[str]) -> List[str]:
-    """Applies stemming to all tokens in a list."""
-    return [stem_word(t) for t in tokens]
+    """Applies Porter stemming to every token in `tokens`."""
+    return [stem_word(token) for token in tokens]
 
 
-# =====================================================================
-# 5. LEMMATIZATION (Lemmatisation - Dictionary + Morphological Rules)
-# =====================================================================
+# ============================================================================
+# 5. LEMMATIZATION (Lemmatisation — Irregular Dictionary + Morphology)
+# ============================================================================
 
-# Curated English Irregular Lemmas (verbs, nouns, adjectives)
 IRREGULAR_LEMMAS: Dict[str, str] = {
     # Irregular verbs
     "was": "be", "were": "be", "been": "be", "am": "be", "are": "be", "is": "be",
@@ -327,96 +287,59 @@ IRREGULAR_LEMMAS: Dict[str, str] = {
     "wrote": "write", "written": "write", "writes": "write",
     "found": "find", "finds": "find",
     "spent": "spend", "spends": "spend",
-
-    # Irregular nouns
-    "children": "child",
-    "men": "man",
-    "women": "woman",
-    "people": "person",
-    "feet": "foot",
-    "teeth": "tooth",
-    "mice": "mouse",
-    "geese": "goose",
-    "oxen": "ox",
-    "data": "datum",
-    "criteria": "criterion",
-    "phenomena": "phenomenon",
-    "analyses": "analysis",
-    "indices": "index",
-    "matrices": "matrix",
-    "vertices": "vertex",
-    "appendices": "appendix",
-    "theses": "thesis",
-    "crises": "crisis",
-
-    # Irregular adjectives/adverbs
-    "better": "good",
-    "best": "good",
-    "worse": "bad",
-    "worst": "bad",
-    "more": "much",
-    "most": "much",
-    "less": "little",
-    "least": "little"
+    # Irregular plural nouns
+    "children": "child", "men": "man", "women": "woman", "people": "person",
+    "feet": "foot", "teeth": "tooth", "mice": "mouse", "geese": "goose",
+    "oxen": "ox", "data": "datum", "criteria": "criterion",
+    "phenomena": "phenomenon", "analyses": "analysis", "indices": "index",
+    "matrices": "matrix", "vertices": "vertex", "appendices": "appendix",
+    "theses": "thesis", "crises": "crisis",
+    # Irregular comparatives & superlatives
+    "better": "good", "best": "good",
+    "worse": "bad", "worst": "bad",
+    "more": "much", "most": "much",
+    "less": "little", "least": "little",
 }
 
 
 def lemmatize_word(word: str) -> str:
-    """
-    Lemmatizes a single word using:
-    1. Direct irregular lemma lookup table
-    2. Rule-based morphological inflection reductions
-    """
+    """Maps an English word to its canonical dictionary lemma."""
     w = word.lower()
     if len(w) <= 2:
         return w
 
-    # 1. Exact irregular lookup
+    # 1. Exact lookup for irregular verbs, nouns, and adjectives
     if w in IRREGULAR_LEMMAS:
         return IRREGULAR_LEMMAS[w]
 
-    # 2. Plural nouns ending in -ies -> -y (e.g., companies -> company)
-    if w.endswith("ies") and len(w) > 4:
-        preceding = w[-4]
-        if preceding not in VOWELS:
-            return w[:-3] + "y"
+    # 2. Plurals ending in consonant + 'ies' -> 'y' (companies -> company)
+    if w.endswith("ies") and len(w) > 4 and w[-4] not in VOWELS:
+        return w[:-3] + "y"
 
-    # 3. Plurals ending in -ves -> -f / -fe (e.g., shelves -> shelf, knives -> knife)
+    # 3. Plurals ending in '-ves' -> '-f' or '-fe' (shelves -> shelf, knives -> knife)
     if w.endswith("ves") and len(w) > 4:
-        if w in ("knives", "wives", "lives"):
-            return w[:-3] + "fe"
-        return w[:-3] + "f"
+        return w[:-3] + ("fe" if w in ("knives", "wives", "lives") else "f")
 
-    # 4. Plurals ending in -es after s, x, z, ch, sh (e.g., boxes -> box, watches -> watch)
-    if w.endswith("es") and len(w) > 3:
-        stem = w[:-2]
-        if stem.endswith(("s", "x", "z", "ch", "sh")):
-            return stem
+    # 4. Sibilant plurals ending in '-es' (boxes -> box, watches -> watch)
+    if w.endswith("es") and len(w) > 3 and w[:-2].endswith(("s", "x", "z", "ch", "sh")):
+        return w[:-2]
 
-    # 5. Regular noun plurals ending in -s (e.g., banks -> bank, rates -> rate)
+    # 5. Regular noun plurals ending in '-s' (banks -> bank)
     if w.endswith("s") and not w.endswith("ss") and len(w) > 3:
         return w[:-1]
 
-    # 6. Participles / Gerunds ending in -ing (e.g., exporting -> export)
-    if w.endswith("ing") and len(w) > 4:
-        stem = w[:-3]
-        if _ends_double_consonant(stem):
-            return stem[:-1]  # dropping -> drop
-        if _has_vowel(stem):
-            return stem
-
-    # 7. Past participles ending in -ed (e.g., acquired -> acquire, traded -> trade)
-    if w.endswith("ed") and len(w) > 3:
-        stem = w[:-2]
-        if _ends_double_consonant(stem):
-            return stem[:-1]
-        if _has_vowel(stem):
-            return stem
+    # 6. Gerunds / participles ending in '-ing' or '-ed'
+    for suffix, min_len in (("ing", 4), ("ed", 3)):
+        if w.endswith(suffix) and len(w) > min_len:
+            stem = w[: -len(suffix)]
+            if _ends_double_consonant(stem):
+                return stem[:-1]
+            if _has_vowel(stem):
+                return stem
 
     return w
 
 
 def lemmatize_tokens(tokens: List[str]) -> List[str]:
-    """Applies lemmatization to all tokens in a list."""
-    return [lemmatize_word(t) for t in tokens]
-
+    """Applies morphological lemmatization to every token in `tokens`."""
+    return [lemmatize_word(token) for token in tokens]

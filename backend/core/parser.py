@@ -1,13 +1,35 @@
-"""Dataset Parser for Reuters-21578 and raw text files.
-Implemented from scratch without external libraries (no BeautifulSoup, no lxml).
+"""Dataset parser for Reuters-21578 SGML files and plain-text corpora.
+
+Implemented 100% from scratch using standard Python string operations
+(no BeautifulSoup, lxml, or XML/HTML parsing libraries).
 """
 
 from typing import Dict, List, Optional, Tuple
 
 
+# Common SGML entities found in Reuters-21578 dispatches
+SGML_ENTITIES: Dict[str, str] = {
+    "&lt;": "<",
+    "&gt;": ">",
+    "&amp;": "&",
+    "&quot;": '"',
+    "&apos;": "'",
+    "&#2;": "",       # STX start-of-text control marker
+    "&#3;": "",       # ETX end-of-text control marker
+    "&reuter;": "",
+}
+
+
 class Document:
-    """Represents an ingested document in the search engine."""
-    def __init__(self, doc_id: str, title: str = "", body: str = "", topics: Optional[List[str]] = None):
+    """Represents a single parsed document in the corpus."""
+
+    def __init__(
+        self,
+        doc_id: str,
+        title: str = "",
+        body: str = "",
+        topics: Optional[List[str]] = None,
+    ):
         self.doc_id = str(doc_id)
         self.title = title.strip()
         self.body = body.strip()
@@ -15,164 +37,147 @@ class Document:
 
     @property
     def full_text(self) -> str:
-        """Returns combined title and body for indexing."""
+        """Combines title and body into a single string for indexing."""
         if self.title and self.body:
             return f"{self.title}\n{self.body}"
         return self.title or self.body or ""
 
     def to_dict(self) -> Dict:
+        """Serializes the document with a short preview for API responses."""
+        preview = f"{self.body[:200]}..." if len(self.body) > 200 else self.body
         return {
             "doc_id": self.doc_id,
             "title": self.title,
             "body": self.body,
             "topics": self.topics,
-            "preview": (self.body[:200] + "...") if len(self.body) > 200 else self.body
+            "preview": preview,
         }
 
 
 def decode_sgml_entities(text: str) -> str:
-    """Manually decodes common SGML / XML entities without external libraries."""
-    entities = {
-        "&lt;": "<",
-        "&gt;": ">",
-        "&amp;": "&",
-        "&quot;": "\"",
-        "&apos;": "'",
-        "&#2;": "",      # STX control char in Reuters
-        "&#3;": "",      # ETX control char in Reuters
-        "&reuter;": "",
-    }
-    for ent, replacement in entities.items():
-        text = text.replace(ent, replacement)
+    """Replaces SGML character entities (&amp;, &lt;, &#2;, etc.) with plain text."""
+    for entity, replacement in SGML_ENTITIES.items():
+        text = text.replace(entity, replacement)
     return text
 
 
 def extract_tag_content(text: str, tag_name: str, start_pos: int = 0) -> Tuple[Optional[str], int]:
+    """Extracts text between <TAG> and </TAG> starting at `start_pos` (case-insensitive).
+
+    Returns `(inner_text, position_after_closing_tag)` or `(None, start_pos)` if not found.
     """
-    Extracts the content between <TAG> and </TAG> starting from start_pos.
-    Returns (content, end_pos_of_closing_tag).
-    """
-    open_tag = f"<{tag_name.upper()}>"
-    close_tag = f"</{tag_name.upper()}>"
-    
-    # Case-insensitive search for open tag
+    open_tag = f"<{tag_name.lower()}>"
+    close_tag = f"</{tag_name.lower()}>"
     lower_text = text.lower()
-    lower_open = open_tag.lower()
-    lower_close = close_tag.lower()
 
-    pos_open = lower_text.find(lower_open, start_pos)
-    if pos_open == -1:
+    open_pos = lower_text.find(open_tag, start_pos)
+    if open_pos == -1:
         return None, start_pos
 
-    content_start = pos_open + len(open_tag)
-    pos_close = lower_text.find(lower_close, content_start)
-    if pos_close == -1:
+    content_start = open_pos + len(open_tag)
+    close_pos = lower_text.find(close_tag, content_start)
+    if close_pos == -1:
         return None, start_pos
 
-    content = text[content_start:pos_close]
-    return content, pos_close + len(close_tag)
+    return text[content_start:close_pos], close_pos + len(close_tag)
+
+
+def extract_all_tags(text: str, tag_name: str) -> List[str]:
+    """Extracts all occurrences of `<TAG>...</TAG>` inside `text`."""
+    values: List[str] = []
+    pos = 0
+    while True:
+        val, next_pos = extract_tag_content(text, tag_name, pos)
+        if val is None:
+            break
+        if val.strip():
+            values.append(val.strip())
+        pos = next_pos
+    return values
+
+
+def extract_attribute(tag_chunk: str, attr_name: str) -> Optional[str]:
+    """Extracts an attribute value like `NEWID="12"` from an opening SGML tag."""
+    pattern = f'{attr_name.lower()}="'
+    attr_pos = tag_chunk.lower().find(pattern)
+    if attr_pos == -1:
+        return None
+
+    val_start = attr_pos + len(pattern)
+    val_end = tag_chunk.find('"', val_start)
+    if val_end == -1:
+        return None
+    return tag_chunk[val_start:val_end]
+
+
+def _parse_reuters_block(block: str, fallback_id: int) -> Document:
+    """Converts a single `<REUTERS ...>...</REUTERS>` SGML block into a `Document`."""
+    doc_id = extract_attribute(block, "NEWID") or str(fallback_id)
+    title, _ = extract_tag_content(block, "TITLE")
+    title = (title or "").strip()
+
+    body, _ = extract_tag_content(block, "BODY")
+    if body is None:
+        # Fallback for dispatches that contain <TEXT> without a nested <BODY> tag
+        text_content, _ = extract_tag_content(block, "TEXT")
+        body = (text_content or "").strip()
+        if title and body.startswith(title):
+            body = body[len(title) :].strip()
+
+    topics_section, _ = extract_tag_content(block, "TOPICS")
+    topics = extract_all_tags(topics_section, "D") if topics_section else []
+
+    return Document(doc_id=doc_id, title=title, body=body or "", topics=topics)
 
 
 def parse_reuters_sgml(content: str) -> List[Document]:
-    """
-    Parses a Reuters-21578 SGML string into a list of Document objects.
-    Extracts NEWID, TITLE, BODY, and TOPICS purely with manual string searching.
-    """
-    content = decode_sgml_entities(content)
-    documents: List[Document] = []
-    
-    pos = 0
-    lower_content = content.lower()
-    reuters_open_tag = "<reuters"
-    reuters_close_tag = "</reuters>"
+    """Parses a Reuters-21578 SGML string into a list of `Document` objects."""
+    decoded = decode_sgml_entities(content)
+    lower_content = decoded.lower()
+    open_marker = "<reuters"
+    close_marker = "</reuters>"
 
-    doc_counter = 1
+    documents: List[Document] = []
+    pos = 0
+    counter = 1
 
     while True:
-        reuters_start = lower_content.find(reuters_open_tag, pos)
-        if reuters_start == -1:
+        start = lower_content.find(open_marker, pos)
+        if start == -1:
             break
 
-        reuters_end = lower_content.find(reuters_close_tag, reuters_start)
-        if reuters_end == -1:
+        end = lower_content.find(close_marker, start)
+        if end == -1:
             break
 
-        doc_chunk = content[reuters_start : reuters_end + len(reuters_close_tag)]
-        lower_chunk = doc_chunk.lower()
+        block_end = end + len(close_marker)
+        block = decoded[start:block_end]
+        documents.append(_parse_reuters_block(block, fallback_id=counter))
 
-        # Extract NEWID or fallback to counter
-        newid_idx = lower_chunk.find("newid=\"")
-        doc_id = str(doc_counter)
-        if newid_idx != -1:
-            id_start = newid_idx + 7
-            id_end = doc_chunk.find("\"", id_start)
-            if id_end != -1:
-                doc_id = doc_chunk[id_start:id_end]
-
-        # Extract TITLE
-        title, _ = extract_tag_content(doc_chunk, "TITLE")
-        title = title or ""
-
-        # Extract BODY
-        body, _ = extract_tag_content(doc_chunk, "BODY")
-        if body is None:
-            # Some documents only have TEXT without BODY tag
-            text_tag, _ = extract_tag_content(doc_chunk, "TEXT")
-            body = text_tag or ""
-            # Strip title from body if duplicated
-            if title and body.startswith(title):
-                body = body[len(title):]
-
-        # Extract TOPICS
-        topics_chunk, _ = extract_tag_content(doc_chunk, "TOPICS")
-        topics = []
-        if topics_chunk:
-            t_pos = 0
-            while True:
-                d_val, end_d = extract_tag_content(topics_chunk, "D", t_pos)
-                if d_val is None:
-                    break
-                topics.append(d_val.strip())
-                t_pos = end_d
-
-        doc = Document(
-            doc_id=doc_id,
-            title=title.strip(),
-            body=body.strip(),
-            topics=topics
-        )
-        documents.append(doc)
-
-        pos = reuters_end + len(reuters_close_tag)
-        doc_counter += 1
+        pos = block_end
+        counter += 1
 
     return documents
 
 
 def parse_raw_text(content: str, filename: str = "document") -> List[Document]:
-    """
-    Parses plain text content. If it contains lines or paragraphs,
-    treats each non-empty section as a document, or the whole file as 1 document.
-    """
+    """Splits plain text by blank lines (`\\n\\n`) into individual `Document` records."""
     paragraphs = [p.strip() for p in content.split("\n\n") if p.strip()]
-    if not paragraphs:
-        paragraphs = [content.strip()] if content.strip() else []
+    if not paragraphs and content.strip():
+        paragraphs = [content.strip()]
 
-    docs = []
-    for i, p in enumerate(paragraphs, start=1):
-        lines = p.split("\n")
-        title = lines[0][:80] if len(lines) > 1 else f"{filename} #{i}"
-        body = "\n".join(lines[1:]) if len(lines) > 1 else p
-        docs.append(Document(doc_id=str(i), title=title, body=body))
-    return docs
+    documents: List[Document] = []
+    for idx, paragraph in enumerate(paragraphs, start=1):
+        lines = paragraph.splitlines()
+        title = lines[0][:80] if len(lines) > 1 else f"{filename} #{idx}"
+        body = "\n".join(lines[1:]) if len(lines) > 1 else paragraph
+        documents.append(Document(doc_id=str(idx), title=title, body=body))
+
+    return documents
 
 
-def parse_document_file(content: str, filename: str) -> List[Document]:
-    """
-    Automatically detects the file format (.sgm, .xml, .txt) and parses documents.
-    """
-    lower_content = content.lower()
-    if "<reuters" in lower_content:
+def parse_document_file(content: str, filename: str = "document") -> List[Document]:
+    """Detects Reuters SGML markup vs. plain text and parses the corpus."""
+    if "<reuters" in content.lower():
         return parse_reuters_sgml(content)
     return parse_raw_text(content, filename)
-

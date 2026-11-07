@@ -18,14 +18,14 @@ const MODELS = [
   {
     id: 'tfidf',
     label: 'TF-IDF',
-    formula: 'w(t, d) = tf(t, d) × log₁₀(N / df(t))',
+    formula: 'w(t, d) = TF(t, d) × log₁₀(1 + N / df(t))',
     desc: 'Rewards terms frequent in document d while penalizing ubiquitous corpus terms.'
   },
   {
     id: 'tf',
     label: 'Normalized TF',
-    formula: 'w(t, d) = f(t, d) / ∑ f(t′, d)',
-    desc: 'Length-normalized term frequency preventing bias toward long documents.'
+    formula: 'w(t, d) = f(t, d) / max f(t′, d)',
+    desc: 'Max-normalized term frequency preventing bias toward long documents.'
   },
   {
     id: 'f',

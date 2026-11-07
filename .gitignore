@@ -7,11 +7,15 @@ __pycache__/
 env/
 venv/
 ENV/
-.venv
+.venv/
 *.egg-info/
 .installed.cfg
 *.egg
 .pytest_cache/
+.coverage
+
+# Binary index snapshots (JSON checkpoints stay portable; .pkl is regenerated locally)
+backend/data/saved_indexes/*.pkl
 
 # Node & Frontend
 node_modules/
@@ -36,4 +40,3 @@ pnpm-debug.log*
 *.swo
 .DS_Store
 Thumbs.db
-

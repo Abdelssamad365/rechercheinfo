@@ -1,18 +1,19 @@
-"""Memory Monitoring and Metrics Engine.
-Computes true deep RAM footprint using recursive sys.getsizeof.
-Compares Matrix representations against Inverted Lists.
+"""Deep RAM Profiler and Post-Indexing Metrics Engine.
+
+Measures the true recursive memory footprint of Python index structures
+using `sys.getsizeof` with object-ID deduplication, comparing dense matrices
+against sparse inverted posting lists.
 """
 
 import sys
-from typing import Any, Dict, Set
+from typing import Any, Dict, Optional, Set
 from .indexer import MultiModelIndex
 
 
-def deep_getsizeof(obj: Any, seen: Set[int] = None) -> int:
-    """
-    Recursively computes the true in-memory size (in bytes) of a Python object,
-    including all nested dictionaries, lists, tuples, sets, and strings.
-    Avoids double-counting shared references via object id tracking.
+def deep_getsizeof(obj: Any, seen: Optional[Set[int]] = None) -> int:
+    """Recursively computes the exact byte size of `obj` and its nested elements.
+
+    Tracks visited `id(obj)` references in `seen` so shared objects are counted once.
     """
     if seen is None:
         seen = set()
@@ -20,60 +21,55 @@ def deep_getsizeof(obj: Any, seen: Set[int] = None) -> int:
     obj_id = id(obj)
     if obj_id in seen:
         return 0
-
     seen.add(obj_id)
-    size = sys.getsizeof(obj)
+
+    total = sys.getsizeof(obj)
 
     if isinstance(obj, dict):
-        for k, v in obj.items():
-            size += deep_getsizeof(k, seen)
-            size += deep_getsizeof(v, seen)
+        for key, value in obj.items():
+            total += deep_getsizeof(key, seen)
+            total += deep_getsizeof(value, seen)
     elif isinstance(obj, (list, tuple, set, frozenset)):
         for item in obj:
-            size += deep_getsizeof(item, seen)
+            total += deep_getsizeof(item, seen)
 
-    return size
+    return total
 
 
-def format_bytes(bytes_num: int) -> str:
-    """Formats raw byte count into human-readable B, KB, MB, GB."""
-    if bytes_num < 1024:
-        return f"{bytes_num} B"
-    elif bytes_num < 1024 * 1024:
-        return f"{bytes_num / 1024:.2f} KB"
-    elif bytes_num < 1024 * 1024 * 1024:
-        return f"{bytes_num / (1024 * 1024):.2f} MB"
-    else:
-        return f"{bytes_num / (1024 * 1024 * 1024):.2f} GB"
+def format_bytes(num_bytes: int) -> str:
+    """Converts a raw byte count into a human-readable unit (B, KB, MB, GB)."""
+    if num_bytes < 1024:
+        return f"{num_bytes} B"
+    if num_bytes < 1024 ** 2:
+        return f"{num_bytes / 1024:.2f} KB"
+    if num_bytes < 1024 ** 3:
+        return f"{num_bytes / (1024 ** 2):.2f} MB"
+    return f"{num_bytes / (1024 ** 3):.2f} GB"
+
+
+def _savings_percentage(matrix_bytes: int, inverted_bytes: int) -> float:
+    """Computes percentage of RAM saved by Inverted Lists compared to Matrices."""
+    if matrix_bytes <= 0:
+        return 0.0
+    return round((1.0 - (inverted_bytes / matrix_bytes)) * 100, 1)
 
 
 def compute_index_metrics(index: MultiModelIndex) -> Dict[str, Any]:
-    """
-    Computes all required post-indexing metrics:
-    - Vocabulary dimension (|V|)
-    - Document count (N)
-    - RAM occupied by Matrices (Doc-Term & Term-Doc) vs Inverted Lists (Posting Lists)
-    - Savings percentage
-    """
-    num_docs = index.num_documents
-    vocab_size = index.vocabulary_size
-
-    # Measure memory for each model's structures
-    model_memory: Dict[str, Dict[str, Any]] = {}
+    """Computes corpus dimensions and per-model RAM comparisons."""
+    models_breakdown: Dict[str, Dict[str, Any]] = {}
     total_matrices_bytes = 0
     total_inverted_bytes = 0
 
-    for model_name, model_data in index.models.items():
+    for model_key, model_data in index.models.items():
         doc_term_bytes = deep_getsizeof(model_data.doc_term)
         term_doc_bytes = deep_getsizeof(model_data.term_doc)
         matrix_bytes = doc_term_bytes + term_doc_bytes
-
         inverted_bytes = deep_getsizeof(model_data.inverted_index)
 
         total_matrices_bytes += matrix_bytes
         total_inverted_bytes += inverted_bytes
 
-        model_memory[model_name] = {
+        models_breakdown[model_key] = {
             "name": model_data.name,
             "doc_term_bytes": doc_term_bytes,
             "doc_term_formatted": format_bytes(doc_term_bytes),
@@ -83,22 +79,16 @@ def compute_index_metrics(index: MultiModelIndex) -> Dict[str, Any]:
             "total_matrix_formatted": format_bytes(matrix_bytes),
             "inverted_index_bytes": inverted_bytes,
             "inverted_index_formatted": format_bytes(inverted_bytes),
-            "savings_ratio": round((1.0 - (inverted_bytes / matrix_bytes)) * 100, 1) if matrix_bytes > 0 else 0
+            "savings_ratio": _savings_percentage(matrix_bytes, inverted_bytes),
         }
 
-    # Global savings comparison
-    global_savings_percent = round(
-        (1.0 - (float(total_inverted_bytes) / float(total_matrices_bytes))) * 100, 1
-    ) if total_matrices_bytes > 0 else 0
-
     return {
-        "num_documents": num_docs,
-        "vocabulary_size": vocab_size,
+        "num_documents": index.num_documents,
+        "vocabulary_size": index.vocabulary_size,
         "total_matrices_bytes": total_matrices_bytes,
         "total_matrices_formatted": format_bytes(total_matrices_bytes),
         "total_inverted_bytes": total_inverted_bytes,
         "total_inverted_formatted": format_bytes(total_inverted_bytes),
-        "global_savings_percent": global_savings_percent,
-        "models_breakdown": model_memory
+        "global_savings_percent": _savings_percentage(total_matrices_bytes, total_inverted_bytes),
+        "models_breakdown": models_breakdown,
     }
-

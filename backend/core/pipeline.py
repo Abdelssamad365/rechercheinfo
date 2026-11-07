@@ -1,158 +1,153 @@
 """Dynamic NLP Pipeline orchestrator.
-Allows enabling/disabling steps AND executing them in arbitrary user-defined order.
+
+Executes user-selected preprocessing steps in any custom sequence order,
+and supports step-by-step intermediate tracing for the live UI playground.
 """
 
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 from .nlp_steps import (
     clean_tags,
+    lemmatize_tokens,
     normalize_text,
-    tokenize,
     remove_stopwords,
     stem_tokens,
-    lemmatize_tokens,
-    DEFAULT_STOPWORDS
+    tokenize,
 )
 
 
-AVAILABLE_STEPS = [
+AVAILABLE_STEPS: List[Dict[str, Any]] = [
     {
         "id": "tag_cleaning",
         "name": "Tag Cleaning",
         "description": "Strips SGML/XML tags (<...>) and decodes entities.",
-        "default_enabled": True
+        "default_enabled": True,
     },
     {
         "id": "normalisation",
         "name": "Normalisation",
         "description": "Lowercases, removes punctuation, normalizes whitespace and tokenizes.",
-        "default_enabled": True
+        "default_enabled": True,
     },
     {
         "id": "stopwords_removal",
         "name": "Stopwords Removal",
         "description": "Filters out high-frequency functional English words.",
-        "default_enabled": True
+        "default_enabled": True,
     },
     {
         "id": "stemming",
         "name": "Stemming",
         "description": "Rule-based suffix stripping (Porter-style).",
-        "default_enabled": True
+        "default_enabled": True,
     },
     {
         "id": "lemmatization",
         "name": "Lemmatization",
         "description": "Reduces words to base forms using irregular dictionary and morphological rules.",
-        "default_enabled": False
-    }
+        "default_enabled": False,
+    },
 ]
+
+DEFAULT_STEP_ORDER: List[str] = [
+    "tag_cleaning",
+    "normalisation",
+    "stopwords_removal",
+    "stemming",
+]
+
+STEP_NAMES: Dict[str, str] = {step["id"]: step["name"] for step in AVAILABLE_STEPS}
+
+
+def _ensure_tokens(data: Union[str, List[str]]) -> List[str]:
+    """Converts string data into whitespace-separated tokens without forcing normalization."""
+    if isinstance(data, list):
+        return data
+    return [tok for tok in data.split() if tok]
+
+
+def _format_trace_entry(
+    step_id: str,
+    step_name: str,
+    data: Union[str, List[str]],
+) -> Dict[str, Any]:
+    """Formats an intermediate pipeline output for UI visualization."""
+    if isinstance(data, list):
+        preview = " ".join(data[:20]) + ("..." if len(data) > 20 else "")
+        data_type = "tokens"
+    else:
+        preview = data[:200] + ("..." if len(data) > 200 else "")
+        data_type = "string"
+
+    return {
+        "step_id": step_id,
+        "step_name": step_name,
+        "type": data_type,
+        "output": data,
+        "preview": preview,
+        "count": len(data),
+    }
 
 
 class DynamicNLPPipeline:
-    """
-    Orchestrates the NLP pipeline dynamically according to user configuration:
-    - Custom selection of steps
-    - Custom execution order
-    """
+    """Configurable NLP pipeline with arbitrary step selection and ordering."""
 
-    def __init__(self, step_order: List[str] = None):
-        """
-        step_order: ordered list of step IDs to execute.
-        If None, uses default 5-step order.
-        """
+    def __init__(self, step_order: Optional[List[str]] = None):
         if step_order is None:
-            self.step_order = [
-                "tag_cleaning",
-                "normalisation",
-                "stopwords_removal",
-                "stemming"
-            ]
+            self.step_order = list(DEFAULT_STEP_ORDER)
         else:
-            self.step_order = [s for s in step_order if s in [st["id"] for st in AVAILABLE_STEPS]]
+            self.step_order = [step for step in step_order if step in STEP_NAMES]
 
     def process(self, text: str) -> List[str]:
-        """
-        Processes an input raw text string through the active pipeline steps in order.
-        Returns final list of tokens.
-        """
-        current_data: Union[str, List[str]] = text
-
+        """Runs all enabled steps in order and returns the final list of tokens."""
+        data: Union[str, List[str]] = text
         for step_id in self.step_order:
-            current_data = self._apply_step(step_id, current_data)
+            data = self._apply_step(step_id, data)
 
-        # Guarantee final output is a list of string tokens
-        if isinstance(current_data, str):
-            return tokenize(normalize_text(current_data))
-        return [str(t) for t in current_data if str(t).strip()]
+        tokens = _ensure_tokens(data)
+        return [tok.strip() for tok in tokens if tok.strip()]
 
     def trace(self, text: str) -> List[Dict[str, Any]]:
-        """
-        Runs the pipeline while recording intermediate outputs after each step.
-        Used for the interactive live preview in the Admin UI.
-        """
-        trace_history = []
-        current_data: Union[str, List[str]] = text
+        """Executes the pipeline while recording output snapshots after each step."""
+        history: List[Dict[str, Any]] = [
+            _format_trace_entry("input", "Input Raw Text", text)
+        ]
 
-        trace_history.append({
-            "step_id": "input",
-            "step_name": "Input Raw Text",
-            "type": "string",
-            "output": text,
-            "preview": text[:200] + ("..." if len(text) > 200 else ""),
-            "count": len(text)
-        })
-
+        data: Union[str, List[str]] = text
         for step_id in self.step_order:
-            current_data = self._apply_step(step_id, current_data)
-            
-            step_meta = next((s for s in AVAILABLE_STEPS if s["id"] == step_id), {"name": step_id})
-            is_tokens = isinstance(current_data, list)
+            data = self._apply_step(step_id, data)
+            step_name = STEP_NAMES.get(step_id, step_id)
+            history.append(_format_trace_entry(step_id, step_name, data))
 
-            trace_history.append({
-                "step_id": step_id,
-                "step_name": step_meta.get("name", step_id),
-                "type": "tokens" if is_tokens else "string",
-                "output": current_data if is_tokens else current_data,
-                "preview": " ".join(current_data[:20]) + ("..." if is_tokens and len(current_data) > 20 else "")
-                           if is_tokens else (current_data[:200] + ("..." if len(current_data) > 200 else "")),
-                "count": len(current_data)
-            })
+        return history
 
-        return trace_history
-
-    def _apply_step(self, step_id: str, data: Union[str, List[str]]) -> Union[str, List[str]]:
-        """Executes a single step ensuring type compatibility."""
+    def _apply_step(
+        self,
+        step_id: str,
+        data: Union[str, List[str]],
+    ) -> Union[str, List[str]]:
+        """Applies a single preprocessing step while handling string/token transitions."""
         if step_id == "tag_cleaning":
             if isinstance(data, list):
-                # If already tokens, clean each string
-                return [clean_tags(t) for t in data]
+                return [t for t in (clean_tags(tok) for tok in data) if t]
             return clean_tags(data)
 
-        elif step_id == "normalisation":
-            if isinstance(data, list):
-                # If already tokens, normalize each and re-tokenize
-                merged = " ".join(data)
-                return tokenize(normalize_text(merged))
-            # Text -> normalized tokens
-            return tokenize(normalize_text(data))
+        if step_id == "normalisation":
+            raw_text = " ".join(data) if isinstance(data, list) else data
+            return tokenize(normalize_text(raw_text))
 
-        elif step_id == "stopwords_removal":
-            tokens = data if isinstance(data, list) else tokenize(normalize_text(data))
-            return remove_stopwords(tokens)
+        if step_id == "stopwords_removal":
+            return remove_stopwords(_ensure_tokens(data))
 
-        elif step_id == "stemming":
-            tokens = data if isinstance(data, list) else tokenize(normalize_text(data))
-            return stem_tokens(tokens)
+        if step_id == "stemming":
+            return stem_tokens(_ensure_tokens(data))
 
-        elif step_id == "lemmatization":
-            tokens = data if isinstance(data, list) else tokenize(normalize_text(data))
-            return lemmatize_tokens(tokens)
+        if step_id == "lemmatization":
+            return lemmatize_tokens(_ensure_tokens(data))
 
         return data
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "step_order": self.step_order,
-            "all_available_steps": AVAILABLE_STEPS
+            "all_available_steps": AVAILABLE_STEPS,
         }
-
